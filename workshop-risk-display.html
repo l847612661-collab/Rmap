@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基地风险平面图 - 展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #002D28;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #002D28 0%, #00726d 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        .header-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .legend {
+            display: flex;
+            gap: 30px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .legend {
+                gap: 15px;
+                padding: 10px 20px;
+            }
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .risk-red { background: #dc3545; }
+        .risk-orange { background: #fd7e14; }
+        .risk-yellow { background: #ffc107; }
+        .risk-blue { background: #0dcaf0; }
+
+        .main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #f8f9fa;
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        @media (max-width: 768px) {
+            .main-view {
+                padding: 15px;
+                min-height: 400px;
+            }
+        }
+
+        .workshop-map {
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+            background: #f8f9fa;
+            border: 3px solid #CCCCCC;
+            border-radius: 10px;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 1024px) {
+            .workshop-map {
+                aspect-ratio: 16 / 9;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workshop-map {
+                aspect-ratio: 16 / 9;
+            }
+        }
+
+        .workshop-map img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .no-data {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666666;
+            z-index: 0;
+        }
+
+        .area-box {
+            position: absolute;
+            border: 1px dashed rgba(0, 114, 109, 0.5);
+            background: rgba(0, 114, 109, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 5;
+            pointer-events: auto;
+        }
+
+        .area-box:hover {
+            background: rgba(0, 114, 109, 0.1);
+            border: 2px solid rgba(0, 114, 109, 0.7);
+            z-index: 8;
+        }
+
+        .area-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            background: #00726d;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .area-box:hover .area-label {
+            opacity: 1;
+        }
+
+        .risk-point {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid white;
+            animation: pulse 2s infinite;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 3px 20px rgba(0, 0, 0, 0.5), 0 0 0 8px rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .risk-point:hover {
+            transform: scale(1.6);
+            z-index: 100;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #002D28 0%, #00726d 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+            max-height: calc(85vh - 80px);
+            overflow-y: auto;
+        }
+
+        .detail-row {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            color: #212529;
+            font-size: 15px;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 150px);
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card h3 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #6c757d;
+        }
+
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .refresh-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #00726d;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 114, 109, 0.4);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .refresh-btn:hover {
+            background: #002D28;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 114, 109, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 基地风险平面图</h1>
+            <div class="header-info">
+                实时监控 | 最后更新：<span id="updateTime"></span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color risk-red"></div>
+                <span><strong>红色</strong> - 重大风险（<span id="redCount">0</span>）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color risk-orange"></div>
+                <span><strong>橙色</strong> - 较大风险（<span id="orangeCount">0</span>）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color risk-yellow"></div>
+                <span><strong>黄色</strong> - 一般风险（<span id="yellowCount">0</span>）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color risk-blue"></div>
+                <span><strong>蓝色</strong> - 低风险（<span id="blueCount">0</span>）</span>
+            </div>
+        </div>
+
+        <div class="main-view">
+            <div class="workshop-map" id="workshopMap">
+                <img id="workshopImage" style="display: none;" alt="车间平面图">
+                <div class="no-data" id="noData">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
+                    <div style="font-size: 18px; font-weight: bold;">暂无数据</div>
+                    <div style="font-size: 14px; margin-top: 10px;">请在后台管理页面上传数据</div>
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="manualRefresh()">🔄 刷新数据</button>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle"></div>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <div class="detail-label">🎨 风险等级</div>
+                    <div class="detail-value">
+                        <span class="risk-badge" id="modalBadge"></span>
+                    </div>
+                </div>
+                <div class="detail-row" id="areaRow">
+                    <div class="detail-label">📦 所属区域</div>
+                    <div class="detail-value" id="modalArea"></div>
+                </div>
+                <div class="detail-row" id="codeRow">
+                    <div class="detail-label">🔢 风险代码</div>
+                    <div class="detail-value" id="modalCode"></div>
+                </div>
+                <div class="detail-row" id="descriptionRow">
+                    <div class="detail-label">📝 风险描述</div>
+                    <div class="detail-value" id="modalDescription" style="white-space: pre-wrap;"></div>
+                </div>
+                <div class="detail-row" id="typeRow">
+                    <div class="detail-label">⚠️ 易发生的事故类型</div>
+                    <div class="detail-value" id="modalType"></div>
+                </div>
+                <div class="detail-row" id="measuresRow">
+                    <div class="detail-label">🛡️ 主要管控措施</div>
+                    <div class="detail-value" id="modalMeasures" style="white-space: pre-wrap;"></div>
+                </div>
+                <div class="detail-row" id="deptRow">
+                    <div class="detail-label">🏢 责任部门</div>
+                    <div class="detail-value" id="modalDept"></div>
+                </div>
+                <div class="detail-row" id="responsibleRow">
+                    <div class="detail-label">👤 责任人</div>
+                    <div class="detail-value" id="modalResponsible"></div>
+                </div>
+                <div class="detail-row" id="photoRow">
+                    <div class="detail-label">📷 风险点照片</div>
+                    <div class="detail-value">
+                        <img id="modalPhoto" src="" style="max-width: 100%; max-height: 300px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer;" onclick="showPhotoZoom(this.src)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 区域四色图查看模态框 -->
+    <div class="modal" id="areaDetailImageModal">
+        <div class="modal-content" style="max-width: 90%; max-height: 90vh;">
+            <div class="modal-header">
+                <div class="modal-title" id="areaDetailImageTitle">📊 区域四色图</div>
+                <span class="modal-close" onclick="closeAreaDetailImageModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- 风险点统计 -->
+                <div id="areaRiskStats" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 15px 0; color: #002D28; font-size: 18px;">📋 风险点统计</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; text-align: center;">
+                            <div style="font-size: 28px; font-weight: bold; color: #dc3545;" id="modalRedCount">0</div>
+                            <div style="color: #666; margin-top: 5px;">🔴 重大风险</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #fd7e14; text-align: center;">
+                            <div style="font-size: 28px; font-weight: bold; color: #fd7e14;" id="modalOrangeCount">0</div>
+                            <div style="color: #666; margin-top: 5px;">🟠 较大风险</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; text-align: center;">
+                            <div style="font-size: 28px; font-weight: bold; color: #ffc107;" id="modalYellowCount">0</div>
+                            <div style="color: #666; margin-top: 5px;">🟡 一般风险</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #0dcaf0; text-align: center;">
+                            <div style="font-size: 28px; font-weight: bold; color: #0dcaf0;" id="modalBlueCount">0</div>
+                            <div style="color: #666; margin-top: 5px;">🔵 低风险</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: white; border-radius: 8px; text-align: center;">
+                        <span style="font-size: 16px; color: #666;">总计：</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #002D28;" id="modalTotalCount">0</span>
+                        <span style="font-size: 16px; color: #666;"> 个风险点</span>
+                    </div>
+                </div>
+
+                <!-- 四色图 -->
+                <div id="areaDetailImageContainer">
+                    <h3 style="margin: 0 0 15px 0; color: #002D28; font-size: 18px;">🖼️ 区域详细四色图</h3>
+                    <div id="detailImagesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    </div>
+                    <div id="noDetailImage" style="padding: 40px; background: #f8f9fa; border: 2px dashed #CCCCCC; border-radius: 8px; color: #6c757d; text-align: center; display: none;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                        <div>该区域暂无详细四色图</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片放大查看模态框 -->
+    <div class="modal" id="imageZoomModal" style="background: rgba(0, 0, 0, 0.95);">
+        <div style="position: relative; width: 95%; height: 95%; display: flex; align-items: center; justify-content: center;">
+            <span onclick="closeImageZoom()" style="position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; cursor: pointer; z-index: 10;">
+                &times;
+            </span>
+            <img id="zoomedImage" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
+        </div>
+    </div>
+
+    <script>
+        let data = null;
+
+        const riskColors = {
+            red: '#dc3545',
+            orange: '#fd7e14',
+            yellow: '#ffc107',
+            blue: '#0dcaf0'
+        };
+
+        const riskLabels = {
+            red: '重大风险',
+            orange: '较大风险',
+            yellow: '一般风险',
+            blue: '低风险'
+        };
+
+        // 根据区域内风险点的数量和等级，计算区域的风险系数
+        function calculateAreaRiskScore(areaId) {
+            if (!data || !data.riskPoints) return 0;
+            const risksInArea = data.riskPoints.filter(r => r.areaId == areaId);
+            if (risksInArea.length === 0) return 0;
+
+            // 风险等级权重
+            const weights = {
+                red: 4,    // 重大风险
+                orange: 3, // 较大风险
+                yellow: 2, // 一般风险
+                blue: 1    // 低风险
+            };
+
+            // 计算加权总分
+            let totalScore = 0;
+            risksInArea.forEach(risk => {
+                totalScore += weights[risk.level] || 0;
+            });
+
+            return totalScore;
+        }
+
+        // 获取所有区域的最大风险系数（用于归一化）
+        function getMaxRiskScore() {
+            if (!data || !data.areas) return 1;
+            let maxScore = 0;
+            data.areas.forEach(area => {
+                const score = calculateAreaRiskScore(area.id);
+                if (score > maxScore) maxScore = score;
+            });
+            return maxScore || 1; // 避免除以0
+        }
+
+        // 根据风险系数获取颜色（蓝色→黄色→橙色→红色渐变）
+        function getColorByRiskScore(score, maxScore) {
+            if (score === 0) {
+                // 无风险，返回默认淡青绿色
+                return {
+                    background: 'rgba(0, 114, 109, 0.05)',
+                    border: 'rgba(0, 114, 109, 0.5)'
+                };
+            }
+
+            // 归一化到0-1
+            const normalized = score / maxScore;
+
+            let r, g, b;
+
+            if (normalized <= 0.33) {
+                // 蓝色 (13, 202, 240) → 黄色 (255, 193, 7)
+                const t = normalized / 0.33;
+                r = Math.round(13 + (255 - 13) * t);
+                g = Math.round(202 + (193 - 202) * t);
+                b = Math.round(240 + (7 - 240) * t);
+            } else if (normalized <= 0.67) {
+                // 黄色 (255, 193, 7) → 橙色 (253, 126, 20)
+                const t = (normalized - 0.33) / 0.34;
+                r = Math.round(255 + (253 - 255) * t);
+                g = Math.round(193 + (126 - 193) * t);
+                b = Math.round(7 + (20 - 7) * t);
+            } else {
+                // 橙色 (253, 126, 20) → 红色 (220, 53, 69)
+                const t = (normalized - 0.67) / 0.33;
+                r = Math.round(253 + (220 - 253) * t);
+                g = Math.round(126 + (53 - 126) * t);
+                b = Math.round(20 + (69 - 20) * t);
+            }
+
+            return {
+                background: `rgba(${r}, ${g}, ${b}, 0.15)`,
+                border: `rgba(${r}, ${g}, ${b}, 0.6)`
+            };
+        }
+
+        // 加载数据
+        function loadData() {
+            // 强制刷新 localStorage
+            try {
+                const savedData = localStorage.getItem('workshopRiskData');
+                if (!savedData) {
+                    document.getElementById('noData').style.display = 'block';
+                    return;
+                }
+
+                data = JSON.parse(savedData);
+                document.getElementById('noData').style.display = 'none';
+                render();
+                updateStats();
+                updateTime();
+                console.log('数据已刷新:', new Date().toLocaleString());
+            } catch (e) {
+                console.error('数据加载失败', e);
+                alert('数据格式错误：' + e.message);
+            }
+        }
+
+        // 渲染地图
+        function render() {
+            const map = document.getElementById('workshopMap');
+
+            // 清空
+            map.querySelectorAll('.area-box, .risk-point').forEach(el => el.remove());
+
+            // 设置背景图片
+            if (data.backgroundImage) {
+                const img = document.getElementById('workshopImage');
+                img.src = data.backgroundImage;
+                img.style.display = 'block';
+            }
+
+            // 计算最大风险系数（用于归一化）
+            const maxScore = getMaxRiskScore();
+
+            // 渲染区域
+            if (data.areas) {
+                data.areas.forEach(area => {
+                    const box = document.createElement('div');
+                    box.className = 'area-box';
+                    box.style.left = area.x + '%';
+                    box.style.top = area.y + '%';
+                    box.style.width = area.width + '%';
+                    box.style.height = area.height + '%';
+
+                    // 根据风险系数设置颜色
+                    const riskScore = calculateAreaRiskScore(area.id);
+                    const colors = getColorByRiskScore(riskScore, maxScore);
+                    box.style.background = colors.background;
+                    box.style.borderColor = colors.border;
+
+                    const label = document.createElement('div');
+                    label.className = 'area-label';
+                    label.textContent = area.name;
+                    box.appendChild(label);
+
+                    // 双击显示区域详情（含四色图和风险点统计）
+                    box.ondblclick = function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        showAreaDetailImage(area);
+                    };
+
+                    map.appendChild(box);
+                });
+            }
+
+            // 渲染风险点
+            if (data.riskPoints) {
+                data.riskPoints.forEach(risk => {
+                    const point = document.createElement('div');
+                    point.className = 'risk-point';
+                    point.style.left = risk.x + '%';
+                    point.style.top = risk.y + '%';
+                    point.style.background = riskColors[risk.level];
+                    point.textContent = '⚠';
+                    point.title = risk.name;
+
+                    point.onclick = function(e) {
+                        e.stopPropagation();
+                        showRiskDetail(risk);
+                    };
+
+                    map.appendChild(point);
+                });
+            }
+        }
+
+        // 显示区域信息
+        function showAreaInfo(area) {
+            const risksInArea = data.riskPoints.filter(r => r.areaId == area.id);
+            const info = `区域：${area.name}\n包含风险点：${risksInArea.length} 个`;
+            alert(info);
+        }
+
+        // 显示风险点详情
+        function showRiskDetail(risk) {
+            document.getElementById('modalTitle').textContent = risk.name;
+
+            const badge = document.getElementById('modalBadge');
+            badge.textContent = riskLabels[risk.level];
+            badge.style.background = riskColors[risk.level];
+
+            // 所属区域
+            const areaRow = document.getElementById('areaRow');
+            if (risk.areaId) {
+                const area = data.areas.find(a => a.id == risk.areaId);
+                document.getElementById('modalArea').textContent = area ? area.name : '未知区域';
+                areaRow.style.display = 'block';
+            } else {
+                areaRow.style.display = 'none';
+            }
+
+            // 风险代码
+            const codeRow = document.getElementById('codeRow');
+            if (risk.riskCode) {
+                document.getElementById('modalCode').textContent = risk.riskCode;
+                codeRow.style.display = 'block';
+            } else {
+                codeRow.style.display = 'none';
+            }
+
+            // 风险描述
+            const descriptionRow = document.getElementById('descriptionRow');
+            if (risk.riskDescription) {
+                document.getElementById('modalDescription').textContent = risk.riskDescription;
+                descriptionRow.style.display = 'block';
+            } else {
+                descriptionRow.style.display = 'none';
+            }
+
+            // 风险类型
+            const typeRow = document.getElementById('typeRow');
+            if (risk.riskType) {
+                document.getElementById('modalType').textContent = risk.riskType;
+                typeRow.style.display = 'block';
+            } else {
+                typeRow.style.display = 'none';
+            }
+
+            // 主要管控措施
+            const measuresRow = document.getElementById('measuresRow');
+            if (risk.controlMeasures) {
+                document.getElementById('modalMeasures').textContent = risk.controlMeasures;
+                measuresRow.style.display = 'block';
+            } else {
+                measuresRow.style.display = 'none';
+            }
+
+            // 责任部门
+            const deptRow = document.getElementById('deptRow');
+            if (risk.responsibleDept) {
+                document.getElementById('modalDept').textContent = risk.responsibleDept;
+                deptRow.style.display = 'block';
+            } else {
+                deptRow.style.display = 'none';
+            }
+
+            // 责任人
+            const responsibleRow = document.getElementById('responsibleRow');
+            if (risk.responsible) {
+                document.getElementById('modalResponsible').textContent = risk.responsible;
+                responsibleRow.style.display = 'block';
+            } else {
+                responsibleRow.style.display = 'none';
+            }
+
+            // 风险点照片
+            const photoRow = document.getElementById('photoRow');
+            if (risk.photo) {
+                document.getElementById('modalPhoto').src = risk.photo;
+                photoRow.style.display = 'block';
+            } else {
+                photoRow.style.display = 'none';
+            }
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        document.getElementById('detailModal').onclick = function(e) {
+            if (e.target === this) closeModal();
+        };
+
+        // 显示区域四色图和统计
+        function showAreaDetailImage(area) {
+            document.getElementById('areaDetailImageTitle').textContent = `📊 ${area.name} - 区域详情`;
+
+            // 统计该区域的风险点数量（分级）
+            const risksInArea = data.riskPoints.filter(r => r.areaId == area.id);
+            const counts = { red: 0, orange: 0, yellow: 0, blue: 0 };
+            risksInArea.forEach(r => {
+                if (counts.hasOwnProperty(r.level)) {
+                    counts[r.level]++;
+                }
+            });
+
+            // 更新统计显示（使用模态框专用的ID）
+            document.getElementById('modalRedCount').textContent = counts.red;
+            document.getElementById('modalOrangeCount').textContent = counts.orange;
+            document.getElementById('modalYellowCount').textContent = counts.yellow;
+            document.getElementById('modalBlueCount').textContent = counts.blue;
+            document.getElementById('modalTotalCount').textContent = risksInArea.length;
+
+            // 处理多张四色图显示（向后兼容）
+            let images = [];
+            if (area.detailImages && area.detailImages.length > 0) {
+                images = area.detailImages;
+            } else if (area.detailImage) {
+                images = [area.detailImage];
+            }
+
+            const gridContainer = document.getElementById('detailImagesGrid');
+            const noImagePlaceholder = document.getElementById('noDetailImage');
+
+            if (images.length === 0) {
+                gridContainer.innerHTML = '';
+                gridContainer.style.display = 'none';
+                noImagePlaceholder.style.display = 'block';
+            } else {
+                noImagePlaceholder.style.display = 'none';
+                gridContainer.style.display = 'grid';
+                gridContainer.innerHTML = images.map((img, index) => `
+                    <div style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"
+                         onclick="showImageZoom('${img.replace(/'/g, "\\'")}')">
+                        <img src="${img}" style="width: 100%; height: 200px; object-fit: cover; display: block;" alt="四色图 ${index + 1}">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+                                    padding: 10px; color: white; text-align: center; font-size: 12px;">
+                            图片 ${index + 1} - 双击放大查看
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('areaDetailImageModal').classList.add('active');
+        }
+
+        // 显示图片放大
+        function showImageZoom(imageSrc) {
+            document.getElementById('zoomedImage').src = imageSrc;
+            document.getElementById('imageZoomModal').classList.add('active');
+        }
+
+        // 显示风险点照片放大（复用showImageZoom）
+        function showPhotoZoom(photoSrc) {
+            showImageZoom(photoSrc);
+        }
+
+        // 关闭图片放大
+        function closeImageZoom() {
+            document.getElementById('imageZoomModal').classList.remove('active');
+        }
+
+        // 关闭区域四色图模态框
+        function closeAreaDetailImageModal() {
+            document.getElementById('areaDetailImageModal').classList.remove('active');
+        }
+
+        document.getElementById('areaDetailImageModal').onclick = function(e) {
+            if (e.target === this) closeAreaDetailImageModal();
+        };
+
+        document.getElementById('imageZoomModal').onclick = function(e) {
+            if (e.target === this) closeImageZoom();
+        };
+
+        // 更新统计
+        function updateStats() {
+            if (!data || !data.riskPoints) return;
+
+            const counts = { red: 0, orange: 0, yellow: 0, blue: 0 };
+            data.riskPoints.forEach(r => counts[r.level]++);
+
+            document.getElementById('redCount').textContent = counts.red;
+            document.getElementById('orangeCount').textContent = counts.orange;
+            document.getElementById('yellowCount').textContent = counts.yellow;
+            document.getElementById('blueCount').textContent = counts.blue;
+        }
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('updateTime').textContent = now.toLocaleString('zh-CN');
+        }
+
+        // 手动刷新（带反馈）
+        function manualRefresh() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '🔄 刷新中...';
+            btn.disabled = true;
+
+            // 清除现有数据强制重新加载
+            setTimeout(() => {
+                loadData();
+                btn.innerHTML = '✅ 刷新成功';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 1000);
+            }, 300);
+        }
+
+        // 监听 localStorage 变化（当后台管理页面更新数据时自动刷新）
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'workshopRiskData') {
+                console.log('检测到数据更新，自动刷新');
+                loadData();
+            }
+        });
+
+        // 自动刷新
+        setInterval(loadData, 30000);  // 每30秒自动刷新
+
+        // 初始化
+        window.onload = loadData;
+    </script>
+</body>
+</html>
