@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基地风险平面图 - 后台管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #002D28 0%, #00726d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #002D28 0%, #00726d 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .header-actions {
+                gap: 10px;
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+        }
+
+        .btn-primary {
+            background: #00726d;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #002D28;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #CEA472;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #b8936a;
+        }
+
+        .btn-warning {
+            background: #CEA472;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #b8936a;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #bb2d3b;
+        }
+
+        .btn-light {
+            background: white;
+            color: #002D28;
+            border: 1px solid #CCCCCC;
+        }
+
+        .btn-light:hover {
+            background: #f8f9fa;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr minmax(280px, 20%);
+            gap: 0;
+            min-height: calc(100vh - 60px);
+            align-items: stretch;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* 响应式断点 */
+        @media (max-width: 1400px) {
+            .main-content {
+                grid-template-columns: 1fr minmax(280px, 25%);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+
+        .workspace {
+            padding: 20px;
+            border-right: 2px solid #CCCCCC;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .workspace {
+                padding: 15px;
+                border-right: none;
+                border-bottom: 2px solid #CCCCCC;
+            }
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .workshop-map {
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+            background: #f8f9fa;
+            border: 3px solid #CCCCCC;
+            border-radius: 10px;
+            aspect-ratio: 16 / 9;
+            cursor: crosshair;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 1024px) {
+            .workshop-map {
+                aspect-ratio: 16 / 9;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workshop-map {
+                aspect-ratio: 16 / 9;
+            }
+        }
+
+        .workshop-map img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .upload-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #6c757d;
+            z-index: 0;
+        }
+
+        .upload-placeholder.hidden {
+            display: none;
+        }
+
+        /* 区域框样式 */
+        .area-box {
+            position: absolute;
+            border: 1px dashed rgba(0, 114, 109, 0.5);
+            background: rgba(0, 114, 109, 0.05);
+            cursor: move;
+            z-index: 5;
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+
+        .area-box:hover {
+            border: 2px solid rgba(0, 114, 109, 0.7);
+            background: rgba(0, 114, 109, 0.1);
+        }
+
+        .area-box.selected {
+            border: 2px solid #CEA472;
+            background: rgba(206, 164, 114, 0.1);
+            box-shadow: 0 0 0 3px rgba(206, 164, 114, 0.2);
+            z-index: 8;
+        }
+
+        .area-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            background: #00726d;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .area-box:hover .area-label {
+            opacity: 1;
+        }
+
+        .area-box.selected .area-label {
+            background: #CEA472;
+            color: white;
+            opacity: 1;
+        }
+
+        /* 临时坐标标记 */
+        .temp-marker {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 50;
+            animation: markerPulse 1s infinite;
+        }
+
+        @keyframes markerPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        /* 风险点样式 */
+        .risk-point {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid white;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        .risk-point:hover {
+            transform: scale(1.6);
+            z-index: 100;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px 15px 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-width: 0;
+            max-width: 100%;
+            height: calc(115vh - 60px);
+            position: sticky;
+            top: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                padding: 15px 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                padding: 20px;
+                max-height: none;
+            }
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #002D28;
+            font-size: 18px;
+            border-bottom: 2px solid #CCCCCC;
+            padding-bottom: 10px;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+
+        .upload-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #CCCCCC;
+        }
+
+        .upload-section:last-child {
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: #00726d;
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .file-input-label:hover {
+            background: #002D28;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333333;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            max-width: 100%;
+            padding: 10px;
+            border: 1px solid #CCCCCC;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #00726d;
+            box-shadow: 0 0 0 3px rgba(0, 114, 109, 0.1);
+        }
+
+        .list-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #CCCCCC;
+        }
+
+        .list-item:hover {
+            border-color: #00726d;
+            transform: translateX(5px);
+        }
+
+        .list-item.selected {
+            border-color: #CEA472;
+            background: rgba(206, 164, 114, 0.1);
+        }
+
+        .list-item-delete {
+            color: #dc3545;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .list-item-delete:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #cff4fc;
+            border-color: #0dcaf0;
+            color: #055160;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #664d03;
+        }
+
+        .risk-red { background: #dc3545; }
+        .risk-orange { background: #fd7e14; }
+        .risk-yellow { background: #ffc107; }
+        .risk-blue { background: #0dcaf0; }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #002D28 0%, #00726d 100%);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 基地风险平面图 - 后台管理</h1>
+            <div class="header-actions">
+                <button class="btn btn-warning" onclick="showHelp()">❓ 操作说明</button>
+                <button class="btn btn-success" onclick="exportAllData()">📥 导出所有数据</button>
+                <button class="btn btn-light" onclick="openDisplayPage()">👁️ 查看展示页面</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="workspace">
+                <div class="toolbar">
+                    <button class="btn btn-primary" id="selectModeBtn" onclick="setMode('select')">
+                        ⚡ 选择模式
+                    </button>
+                    <button class="btn btn-warning" id="drawModeBtn" onclick="setMode('draw')">
+                        ✏️ 框选区域
+                    </button>
+                    <button class="btn btn-success" id="addRiskBtn" onclick="setMode('addRisk')">
+                        ➕ 添加风险点
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteSelected()">
+                        🗑️ 删除选中
+                    </button>
+                </div>
+
+                <div class="workshop-map" id="workshopMap">
+                    <img id="workshopImage" style="display: none;" alt="车间平面图">
+                    <div class="upload-placeholder" id="uploadPlaceholder">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📤</div>
+                        <div style="font-size: 18px; font-weight: bold;">请先上传车间平面图</div>
+                        <div style="font-size: 14px; margin-top: 5px;">支持 JPG、PNG 格式</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <h3>📤 上传平面图</h3>
+                <div class="upload-section">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)">
+                        <label for="imageUpload" class="file-input-label">
+                            📁 选择平面图
+                        </label>
+                    </div>
+                    <div id="imageInfo" style="margin-top: 10px; font-size: 12px; color: #6c757d;"></div>
+                </div>
+
+                <div id="areaPanel" style="display: none;">
+                    <h3>✏️ 区域信息</h3>
+                    <div class="alert alert-info">
+                        当前模式：框选区域
+                    </div>
+                    <div class="form-group">
+                        <label>区域名称 *</label>
+                        <input type="text" class="form-control" id="areaName" placeholder="例如：生产区A">
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="saveArea()">
+                        💾 保存区域
+                    </button>
+                </div>
+
+                <div id="riskPanel" style="display: none;">
+                    <h3>✏️ 风险点信息</h3>
+                    <div class="alert alert-info" id="riskPanelHint">
+                        点击地图添加风险点
+                    </div>
+                    <input type="hidden" id="editingRiskId" value="">
+                    <div class="form-group">
+                        <label>所属区域</label>
+                        <div class="form-control" id="riskArea" style="background: #e9ecef; color: #495057;">
+                            （系统自动识别）
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>风险点名称 *</label>
+                        <input type="text" class="form-control" id="riskName" placeholder="例如：设备A">
+                    </div>
+                    <div class="form-group">
+                        <label>风险代码</label>
+                        <input type="text" class="form-control" id="riskCode" placeholder="例如：FX-001">
+                    </div>
+                    <div class="form-group">
+                        <label>风险等级 *</label>
+                        <select class="form-control" id="riskLevel">
+                            <option value="">请选择</option>
+                            <option value="red">🔴 重大风险</option>
+                            <option value="orange">🟠 较大风险</option>
+                            <option value="yellow">🟡 一般风险</option>
+                            <option value="blue">🔵 低风险</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>风险描述</label>
+                        <textarea class="form-control" id="riskDescription" rows="2" placeholder="描述风险内容..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>坐标位置 <span style="font-size: 12px; color: #6c757d;">(点击地图可重新定位)</span></label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <input type="number" class="form-control" id="riskX" placeholder="X坐标%"
+                                       min="0" max="100" step="0.1" readonly>
+                            </div>
+                            <div>
+                                <input type="number" class="form-control" id="riskY" placeholder="Y坐标%"
+                                       min="0" max="100" step="0.1" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>易发生的事故类型</label>
+                        <input type="text" class="form-control" id="riskType" placeholder="例如：机械伤害">
+                    </div>
+                    <div class="form-group">
+                        <label>主要管控措施</label>
+                        <textarea class="form-control" id="controlMeasures" rows="3" placeholder="描述管控措施..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>责任部门</label>
+                        <input type="text" class="form-control" id="responsibleDept" placeholder="例如：生产部">
+                    </div>
+                    <div class="form-group">
+                        <label>责任人</label>
+                        <input type="text" class="form-control" id="riskResponsible" placeholder="例如：张三">
+                    </div>
+                    <div class="form-group">
+                        <label>风险点照片</label>
+                        <div style="margin-bottom: 10px;">
+                            <input type="file" id="riskPhotoInput" accept="image/*" style="display: none;" onchange="handleRiskPhotoUpload(event)">
+                            <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('riskPhotoInput').click()">
+                                📷 上传照片
+                            </button>
+                        </div>
+                        <div id="riskPhotoPreview" style="display: none; margin-top: 10px;">
+                            <img id="riskPhotoImg" src="" style="width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <button type="button" class="btn btn-danger" style="width: 100%; margin-top: 5px;" onclick="clearRiskPhoto()">
+                                ❌ 删除照片
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="saveRisk()">
+                        💾 保存风险点
+                    </button>
+                    <button class="btn btn-danger" style="width: 100%;" onclick="cancelRisk()">
+                        ❌ 取消
+                    </button>
+                </div>
+
+                <h3 style="margin-top: 25px;">📦 区域列表 (<span id="areaCount">0</span>)</h3>
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="showAreaListModal()">
+                    📋 查看区域列表
+                </button>
+
+                <h3 style="margin-top: 25px;">📋 风险点列表 (<span id="riskCount">0</span>)</h3>
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="showRiskListModal()">
+                    📋 查看风险点列表
+                </button>
+
+                <h3 style="margin-top: 25px;">📊 批量导入风险点</h3>
+                <div class="upload-section" style="border-color: #198754;">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="excelUpload" accept=".xlsx,.xls" onchange="handleExcelUpload(event)">
+                        <label for="excelUpload" class="file-input-label" style="background: #198754;">
+                            📊 上传Excel表格
+                        </label>
+                    </div>
+                    <button class="btn btn-success" style="margin-top: 10px; width: 100%;" onclick="downloadTemplate()">
+                        📥 下载Excel模板
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 区域列表弹窗 -->
+    <div class="modal" id="areaListModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div class="modal-title">📦 区域列表</div>
+                <span class="modal-close" onclick="closeAreaListModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div id="areaListContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险点列表弹窗 -->
+    <div class="modal" id="riskListModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button id="backToAreaListBtn" style="display: none; padding: 5px 10px; background: #00726d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;"
+                            onclick="backToAreaList()">
+                        ← 返回区域列表
+                    </button>
+                    <div class="modal-title">📋 风险点列表</div>
+                </div>
+                <span class="modal-close" onclick="closeRiskListModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <!-- 筛选器 -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="riskSearchInput" placeholder="🔍 搜索风险点名称..."
+                                   style="width: 100%; padding: 8px 12px; border: 1px solid #CCCCCC; border-radius: 5px; font-size: 13px;"
+                                   oninput="filterRiskList()">
+                        </div>
+                        <div>
+                            <select id="riskLevelFilter" style="padding: 8px 12px; border: 1px solid #CCCCCC; border-radius: 5px; font-size: 13px;"
+                                    onchange="filterRiskList()">
+                                <option value="">全部等级</option>
+                                <option value="red">🔴 红色</option>
+                                <option value="orange">🟠 橙色</option>
+                                <option value="yellow">🟡 黄色</option>
+                                <option value="blue">🔵 蓝色</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="riskAreaFilter" style="padding: 8px 12px; border: 1px solid #CCCCCC; border-radius: 5px; font-size: 13px;"
+                                    onchange="filterRiskList()">
+                                <option value="">全部区域</option>
+                            </select>
+                        </div>
+                        <button onclick="resetRiskFilters()" style="padding: 8px 15px; background: #CEA472; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">
+                            🔄 重置
+                        </button>
+                    </div>
+                </div>
+                <div id="riskListContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助说明模态框 -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div class="modal-title">📖 操作说明</div>
+                <span class="modal-close" onclick="closeHelp()">&times;</span>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <h3 style="color: #2c3e50; margin-bottom: 15px;">🎯 快速开始</h3>
+
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">第一步：上传车间平面图</h4>
+                    <p style="margin: 0; color: #555;">在右侧边栏点击"选择平面图"按钮，上传您的车间布局图（支持 JPG、PNG 格式）</p>
+                </div>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">第二步：框选区域</h4>
+                    <p style="margin: 0 0 10px 0; color: #555;">1. 点击工具栏中的"✏️ 框选区域"按钮</p>
+                    <p style="margin: 0 0 10px 0; color: #555;">2. 在地图上按住鼠标左键拖拽，绘制矩形区域</p>
+                    <p style="margin: 0; color: #555;">3. 松开鼠标后，输入区域名称（如："生产区A"、"仓储区"）</p>
+                </div>
+
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">第三步：添加风险点（两种方式）</h4>
+
+                    <p style="font-weight: bold; margin: 10px 0 5px 0; color: #333;">方式1：手动添加</p>
+                    <p style="margin: 0 0 5px 0; color: #555;">1. 点击"➕ 添加风险点"按钮</p>
+                    <p style="margin: 0 0 5px 0; color: #555;">2. 在地图上点击要添加风险点的位置</p>
+                    <p style="margin: 0 0 10px 0; color: #555;">3. 填写风险点信息（系统会自动识别所属区域）</p>
+
+                    <p style="font-weight: bold; margin: 10px 0 5px 0; color: #333;">方式2：批量导入</p>
+                    <p style="margin: 0 0 5px 0; color: #555;">1. 点击"📥 下载Excel模板"</p>
+                    <p style="margin: 0 0 5px 0; color: #555;">2. 填写风险点信息（所属区域可不填，系统根据坐标自动判断）</p>
+                    <p style="margin: 0; color: #555;">3. 点击"📊 上传Excel表格"批量导入</p>
+                </div>
+
+                <h3 style="color: #2c3e50; margin: 25px 0 15px 0;">🛠️ 工具栏说明</h3>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left; width: 150px;">按钮</th>
+                        <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">功能说明</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">⚡ 选择模式</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">点击选中区域或风险点，查看详情</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">✏️ 框选区域</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">拖拽鼠标绘制矩形区域</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">➕ 添加风险点</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">点击地图位置添加单个风险点</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">🗑️ 删除选中</td>
+                        <td style="padding: 10px; border: 1px solid #dee2e6;">删除当前选中的区域或风险点</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #2c3e50; margin: 25px 0 15px 0;">💡 使用技巧</h3>
+
+                <ul style="line-height: 2; color: #555;">
+                    <li><strong>自动识别区域：</strong>添加风险点时，系统会根据坐标自动判断所属区域</li>
+                    <li><strong>查看区域风险：</strong>在选择模式下点击区域，该区域内的所有风险点会高亮显示</li>
+                    <li><strong>风险统计：</strong>区域列表会显示每个区域包含的风险点数量</li>
+                    <li><strong>数据保存：</strong>点击"导出所有数据"保存配置，数据会自动同步到展示页面</li>
+                    <li><strong>坐标说明：</strong>X/Y 坐标使用百分比（0-100），与实际图片尺寸无关</li>
+                </ul>
+
+                <h3 style="color: #2c3e50; margin: 25px 0 15px 0;">🎨 风险等级说明</h3>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 150px; padding: 15px; background: #dc3545; color: white; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 5px;">🔴</div>
+                        <div style="font-weight: bold;">重大风险</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; padding: 15px; background: #fd7e14; color: white; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 5px;">🟠</div>
+                        <div style="font-weight: bold;">较大风险</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; padding: 15px; background: #ffc107; color: #000; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 5px;">🟡</div>
+                        <div style="font-weight: bold;">一般风险</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; padding: 15px; background: #0dcaf0; color: white; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 5px;">🔵</div>
+                        <div style="font-weight: bold;">低风险</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                    <h4 style="margin: 0 0 10px 0; color: #721c24;">⚠️ 注意事项</h4>
+                    <ul style="margin: 0; color: #721c24; line-height: 1.8;">
+                        <li>删除区域不会删除该区域内的风险点，风险点会变成"未分配"状态</li>
+                        <li>导出数据会自动保存到浏览器，刷新页面不会丢失数据</li>
+                        <li>建议定期点击"导出所有数据"备份到本地文件</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 区域四色图上传模态框 -->
+    <div class="modal" id="detailImageModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <div class="modal-title">📊 上传区域四色图</div>
+                <span class="modal-close" onclick="closeDetailImageModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    为 <strong id="detailAreaName"></strong> 上传更详细的四色图（可上传多张）。展示页面双击该区域时会显示这些图片。
+                </div>
+
+                <!-- 已上传的图片列表 -->
+                <div id="uploadedImagesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                </div>
+
+                <div id="detailImagePlaceholder" style="padding: 40px 20px; background: #f8f9fa; border: 2px dashed #CCCCCC; border-radius: 8px; color: #6c757d; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🖼️</div>
+                    <div>暂无四色图</div>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <label class="btn btn-primary" style="margin: 0;">
+                        📤 添加图片
+                        <input type="file" id="detailImageInput" accept="image/*" multiple style="display: none;" onchange="handleDetailImageUpload(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="xlsx.full.min.js"></script>
+
+    <script>
+        let backgroundImage = null;
+        let areas = [];  // 区域列表
+        let riskPoints = [];  // 风险点列表
+        let currentMode = 'select';  // 当前模式: select/draw/addRisk
+        let isDrawing = false;
+        let startX, startY;
+        let currentArea = null;
+        let selectedItem = null;
+        let tempRiskPoint = null;
+        let currentEditingAreaId = null; // 当前正在编辑四色图的区域ID
+
+        const riskColors = {
+            red: '#dc3545',
+            orange: '#fd7e14',
+            yellow: '#ffc107',
+            blue: '#0dcaf0'
+        };
+
+        // 上传图片
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                backgroundImage = e.target.result;
+                const img = document.getElementById('workshopImage');
+                img.src = backgroundImage;
+                img.style.display = 'block';
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+                document.getElementById('imageInfo').innerHTML =
+                    `✅ 已上传：${file.name}`;
+                autoSaveToLocalStorage(); // 自动保存
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 设置模式
+        function setMode(mode) {
+            currentMode = mode;
+
+            // 更新按钮状态
+            document.getElementById('selectModeBtn').style.background = mode === 'select' ? '#0b5ed7' : '';
+            document.getElementById('drawModeBtn').style.background = mode === 'draw' ? '#ffca2c' : '';
+            document.getElementById('addRiskBtn').style.background = mode === 'addRisk' ? '#157347' : '';
+
+            // 更新光标
+            const map = document.getElementById('workshopMap');
+            map.style.cursor = mode === 'draw' ? 'crosshair' : mode === 'addRisk' ? 'pointer' : 'default';
+
+            // 显示对应面板
+            document.getElementById('areaPanel').style.display = mode === 'draw' ? 'block' : 'none';
+            document.getElementById('riskPanel').style.display = mode === 'addRisk' ? 'block' : 'none';
+
+            // 在添加风险点模式下，让区域框不响应点击
+            const areaBoxes = document.querySelectorAll('.area-box');
+            areaBoxes.forEach(box => {
+                box.style.pointerEvents = mode === 'addRisk' ? 'none' : 'auto';
+            });
+
+            // 取消选中
+            selectedItem = null;
+            renderAreas();
+            renderRisks();
+        }
+
+        // 地图鼠标事件
+        const map = document.getElementById('workshopMap');
+
+        map.onmousedown = function(e) {
+            if (e.target !== map) return;
+
+            const rect = map.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentMode === 'draw') {
+                isDrawing = true;
+                startX = x;
+                startY = y;
+                currentArea = document.createElement('div');
+                currentArea.className = 'area-box';
+                currentArea.style.left = x + 'px';
+                currentArea.style.top = y + 'px';
+                currentArea.style.width = '0px';
+                currentArea.style.height = '0px';
+                map.appendChild(currentArea);
+            } else if (currentMode === 'addRisk') {
+                const editingId = document.getElementById('editingRiskId').value;
+                const isEditing = editingId !== '';
+
+                tempRiskPoint = {
+                    x: (x / rect.width) * 100,
+                    y: (y / rect.height) * 100
+                };
+
+                // 更新坐标输入框
+                document.getElementById('riskX').value = tempRiskPoint.x.toFixed(1);
+                document.getElementById('riskY').value = tempRiskPoint.y.toFixed(1);
+
+                // 清除之前的临时标记
+                const oldMarker = document.getElementById('tempMarker');
+                if (oldMarker) oldMarker.remove();
+
+                // 添加临时坐标标记
+                const marker = document.createElement('div');
+                marker.id = 'tempMarker';
+                marker.className = 'temp-marker';
+                marker.textContent = '📍';
+                marker.style.left = tempRiskPoint.x + '%';
+                marker.style.top = tempRiskPoint.y + '%';
+                map.appendChild(marker);
+
+                // 如果是编辑模式，同时更新正在编辑的风险点的显示位置
+                if (isEditing) {
+                    const risk = riskPoints.find(r => r.id == editingId);
+                    if (risk) {
+                        risk.x = tempRiskPoint.x;
+                        risk.y = tempRiskPoint.y;
+                        renderRisks();
+                    }
+                }
+
+                // 自动识别所属区域并更新显示
+                const areaId = findAreaByPoint(tempRiskPoint.x, tempRiskPoint.y);
+                if (areaId) {
+                    const area = areas.find(a => a.id == areaId);
+                    document.getElementById('riskArea').textContent = `📍 ${area.name}`;
+                    if (isEditing) {
+                        document.getElementById('riskPanelHint').textContent = `正在编辑 - 位置已更新到：${area.name}`;
+                    } else {
+                        document.getElementById('riskPanelHint').textContent = `点击位置在：${area.name}`;
+                    }
+                } else {
+                    document.getElementById('riskArea').textContent = '（未在任何区域内）';
+                    if (isEditing) {
+                        document.getElementById('riskPanelHint').textContent = '正在编辑 - 位置已更新（未在任何区域内）';
+                    } else {
+                        document.getElementById('riskPanelHint').textContent = '点击位置未在任何区域内';
+                    }
+                }
+
+                if (!isEditing) {
+                    document.getElementById('riskName').focus();
+                }
+            }
+        };
+
+        map.onmousemove = function(e) {
+            if (!isDrawing || currentMode !== 'draw') return;
+
+            const rect = map.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const width = x - startX;
+            const height = y - startY;
+
+            if (width > 0) {
+                currentArea.style.width = width + 'px';
+            } else {
+                currentArea.style.left = x + 'px';
+                currentArea.style.width = Math.abs(width) + 'px';
+            }
+
+            if (height > 0) {
+                currentArea.style.height = height + 'px';
+            } else {
+                currentArea.style.top = y + 'px';
+                currentArea.style.height = Math.abs(height) + 'px';
+            }
+        };
+
+        map.onmouseup = function(e) {
+            if (isDrawing && currentMode === 'draw') {
+                isDrawing = false;
+
+                // 转换为百分比坐标
+                const rect = map.getBoundingClientRect();
+                const areaRect = currentArea.getBoundingClientRect();
+
+                const newAreaData = {
+                    x: ((areaRect.left - rect.left) / rect.width) * 100,
+                    y: ((areaRect.top - rect.top) / rect.height) * 100,
+                    width: (areaRect.width / rect.width) * 100,
+                    height: (areaRect.height / rect.height) * 100
+                };
+
+                // 如果区域太小，删除
+                if (newAreaData.width < 2 || newAreaData.height < 2) {
+                    currentArea.remove();
+                    currentArea = null;
+                    return;
+                }
+
+                currentArea.remove();
+                currentArea = null;
+
+                // 判断是否为编辑模式
+                if (selectedItem && selectedItem.type === 'area') {
+                    // 编辑模式：更新现有区域的位置和大小
+                    selectedItem.data.x = newAreaData.x;
+                    selectedItem.data.y = newAreaData.y;
+                    selectedItem.data.width = newAreaData.width;
+                    selectedItem.data.height = newAreaData.height;
+
+                    // 显示区域面板，允许修改名称
+                    document.getElementById('areaPanel').style.display = 'block';
+                    document.getElementById('areaName').value = selectedItem.data.name;
+
+                    renderAreas();
+                } else {
+                    // 新建模式：创建新区域
+                    const name = prompt('请输入区域名称：');
+                    if (name && name.trim()) {
+                        const area = {
+                            id: Date.now(),
+                            name: name.trim(),
+                            ...newAreaData
+                        };
+                        areas.push(area);
+                        renderAreas();
+                        updateAreaSelect();
+                        updateCounts();
+                        autoSaveToLocalStorage(); // 自动保存
+                    }
+                }
+            }
+        };
+
+        // 保存区域
+        function saveArea() {
+            const name = document.getElementById('areaName').value.trim();
+            if (!name) {
+                alert('请输入区域名称');
+                return;
+            }
+
+            if (selectedItem && selectedItem.type === 'area') {
+                // 更新区域名称
+                selectedItem.data.name = name;
+                renderAreas();
+                renderAreaList();
+                updateAreaSelect();
+                autoSaveToLocalStorage(); // 自动保存
+
+                // 清空表单并退出编辑模式
+                document.getElementById('areaName').value = '';
+                document.getElementById('areaPanel').style.display = 'none';
+                selectedItem = null;
+                setMode('select');
+
+                alert('区域已保存');
+            }
+        }
+
+        // 根据坐标查找所属区域
+        function findAreaByPoint(x, y) {
+            for (let area of areas) {
+                if (x >= area.x && x <= area.x + area.width &&
+                    y >= area.y && y <= area.y + area.height) {
+                    return area.id;
+                }
+            }
+            return '';
+        }
+
+        // 保存风险点
+        function saveRisk() {
+            const editingId = document.getElementById('editingRiskId').value;
+            const isEditing = editingId !== '';
+
+            // 如果是新增，需要有tempRiskPoint
+            if (!isEditing && !tempRiskPoint) {
+                alert('请先在地图上点击一个位置');
+                return;
+            }
+
+            const name = document.getElementById('riskName').value.trim();
+            const level = document.getElementById('riskLevel').value;
+
+            if (!name || !level) {
+                alert('请填写必填项');
+                return;
+            }
+
+            if (isEditing) {
+                // 编辑模式：更新现有风险点
+                const risk = riskPoints.find(r => r.id == editingId);
+                if (risk) {
+                    // 使用tempRiskPoint的坐标（可能已被用户重新点击更改）
+                    if (tempRiskPoint) {
+                        risk.x = tempRiskPoint.x;
+                        risk.y = tempRiskPoint.y;
+                    }
+
+                    // 自动判断所属区域
+                    risk.areaId = findAreaByPoint(risk.x, risk.y);
+                    risk.name = name;
+                    risk.level = level;
+                    risk.riskCode = document.getElementById('riskCode').value;
+                    risk.riskDescription = document.getElementById('riskDescription').value;
+                    risk.riskType = document.getElementById('riskType').value;
+                    risk.controlMeasures = document.getElementById('controlMeasures').value;
+                    risk.responsibleDept = document.getElementById('responsibleDept').value;
+                    risk.responsible = document.getElementById('riskResponsible').value;
+
+                    // 保存照片（如果有的话）
+                    const photoImg = document.getElementById('riskPhotoImg');
+                    if (photoImg.src && photoImg.src.startsWith('data:')) {
+                        risk.photo = photoImg.src;
+                    } else if (!photoImg.src || photoImg.src === '') {
+                        delete risk.photo;
+                    }
+
+                    renderRisks();
+                    renderRiskList();
+                    renderAreas(); // 更新区域颜色
+                    renderAreaList(); // 更新区域列表中的风险点数量
+                    updateCounts();
+                    autoSaveToLocalStorage(); // 自动保存
+
+                    // 清空表单并切换回选择模式
+                    clearRiskForm();
+                    setMode('select');
+                    alert('风险点已更新');
+                }
+            } else {
+                // 新增模式：自动判断所属区域
+                const areaId = findAreaByPoint(tempRiskPoint.x, tempRiskPoint.y);
+                if (areaId) {
+                    const area = areas.find(a => a.id == areaId);
+                    console.log(`自动分配到区域：${area.name}`);
+                }
+
+                const risk = {
+                    id: Date.now(),
+                    areaId: areaId,
+                    name: name,
+                    level: level,
+                    x: tempRiskPoint.x,
+                    y: tempRiskPoint.y,
+                    riskCode: document.getElementById('riskCode').value,
+                    riskDescription: document.getElementById('riskDescription').value,
+                    riskType: document.getElementById('riskType').value,
+                    controlMeasures: document.getElementById('controlMeasures').value,
+                    responsibleDept: document.getElementById('responsibleDept').value,
+                    responsible: document.getElementById('riskResponsible').value
+                };
+
+                // 保存照片（如果有的话）
+                const photoImg = document.getElementById('riskPhotoImg');
+                if (photoImg.src && photoImg.src.startsWith('data:')) {
+                    risk.photo = photoImg.src;
+                }
+
+                riskPoints.push(risk);
+                renderRisks();
+                renderRiskList();
+                renderAreas(); // 更新区域颜色
+                renderAreaList(); // 更新区域列表中的风险点数量
+                updateCounts();
+                autoSaveToLocalStorage(); // 自动保存
+
+                // 清空表单
+                clearRiskForm();
+            }
+        }
+
+        // 清空风险点表单
+        function clearRiskForm() {
+            document.getElementById('editingRiskId').value = '';
+            document.getElementById('riskName').value = '';
+            document.getElementById('riskCode').value = '';
+            document.getElementById('riskLevel').value = '';
+            document.getElementById('riskDescription').value = '';
+            document.getElementById('riskType').value = '';
+            document.getElementById('controlMeasures').value = '';
+            document.getElementById('responsibleDept').value = '';
+            document.getElementById('riskResponsible').value = '';
+            document.getElementById('riskArea').value = '';
+            document.getElementById('riskX').value = '';
+            document.getElementById('riskY').value = '';
+            document.getElementById('riskPanelHint').textContent = '点击地图添加风险点';
+
+            // 清空照片预览
+            clearRiskPhoto();
+
+            tempRiskPoint = null;
+
+            // 移除临时标记
+            const marker = document.getElementById('tempMarker');
+            if (marker) marker.remove();
+        }
+
+        // 取消添加/编辑风险点
+        function cancelRisk() {
+            clearRiskForm();
+            setMode('select');
+        }
+
+        // 根据区域内风险点的数量和等级，计算区域的风险系数
+        function calculateAreaRiskScore(areaId) {
+            const risksInArea = riskPoints.filter(r => r.areaId == areaId);
+            if (risksInArea.length === 0) return 0;
+
+            // 风险等级权重
+            const weights = {
+                red: 4,    // 重大风险
+                orange: 3, // 较大风险
+                yellow: 2, // 一般风险
+                blue: 1    // 低风险
+            };
+
+            // 计算加权总分
+            let totalScore = 0;
+            risksInArea.forEach(risk => {
+                totalScore += weights[risk.level] || 0;
+            });
+
+            return totalScore;
+        }
+
+        // 获取所有区域的最大风险系数（用于归一化）
+        function getMaxRiskScore() {
+            let maxScore = 0;
+            areas.forEach(area => {
+                const score = calculateAreaRiskScore(area.id);
+                if (score > maxScore) maxScore = score;
+            });
+            return maxScore || 1; // 避免除以0
+        }
+
+        // 根据风险系数获取颜色（蓝色→黄色→橙色→红色渐变）
+        function getColorByRiskScore(score, maxScore) {
+            if (score === 0) {
+                // 无风险，返回默认淡青绿色
+                return {
+                    background: 'rgba(0, 114, 109, 0.05)',
+                    border: 'rgba(0, 114, 109, 0.5)'
+                };
+            }
+
+            // 归一化到0-1
+            const normalized = score / maxScore;
+
+            let r, g, b;
+
+            if (normalized <= 0.33) {
+                // 蓝色 (13, 202, 240) → 黄色 (255, 193, 7)
+                const t = normalized / 0.33;
+                r = Math.round(13 + (255 - 13) * t);
+                g = Math.round(202 + (193 - 202) * t);
+                b = Math.round(240 + (7 - 240) * t);
+            } else if (normalized <= 0.67) {
+                // 黄色 (255, 193, 7) → 橙色 (253, 126, 20)
+                const t = (normalized - 0.33) / 0.34;
+                r = Math.round(255 + (253 - 255) * t);
+                g = Math.round(193 + (126 - 193) * t);
+                b = Math.round(7 + (20 - 7) * t);
+            } else {
+                // 橙色 (253, 126, 20) → 红色 (220, 53, 69)
+                const t = (normalized - 0.67) / 0.33;
+                r = Math.round(253 + (220 - 253) * t);
+                g = Math.round(126 + (53 - 126) * t);
+                b = Math.round(20 + (69 - 20) * t);
+            }
+
+            return {
+                background: `rgba(${r}, ${g}, ${b}, 0.15)`,
+                border: `rgba(${r}, ${g}, ${b}, 0.6)`
+            };
+        }
+
+        // 渲染区域
+        function renderAreas() {
+            const map = document.getElementById('workshopMap');
+
+            // 清除现有区域
+            map.querySelectorAll('.area-box').forEach(el => el.remove());
+
+            // 计算最大风险系数（用于归一化）
+            const maxScore = getMaxRiskScore();
+
+            // 渲染所有区域
+            areas.forEach(area => {
+                const box = document.createElement('div');
+                box.className = 'area-box';
+                if (selectedItem && selectedItem.type === 'area' && selectedItem.data.id === area.id) {
+                    box.classList.add('selected');
+                    // 如果在框选模式下且该区域被选中（编辑模式），则隐藏该区域框以便重新框选
+                    if (currentMode === 'draw') {
+                        box.style.opacity = '0.3';
+                        box.style.pointerEvents = 'none';
+                    }
+                }
+                box.style.left = area.x + '%';
+                box.style.top = area.y + '%';
+                box.style.width = area.width + '%';
+                box.style.height = area.height + '%';
+
+                // 在添加风险点模式下，让区域框不响应点击
+                // 在编辑某个区域时，其他区域也不响应点击
+                if (currentMode === 'addRisk') {
+                    box.style.pointerEvents = 'none';
+                } else if (currentMode === 'draw' && selectedItem && selectedItem.type === 'area') {
+                    // 编辑模式下，非选中区域可以点击切换编辑对象
+                    if (selectedItem.data.id !== area.id) {
+                        box.style.pointerEvents = 'auto';
+                    }
+                } else if (currentMode === 'draw') {
+                    // 框选模式但没有选中区域时，可以点击区域进入编辑
+                    box.style.pointerEvents = 'auto';
+                } else {
+                    box.style.pointerEvents = 'auto';
+                }
+
+                // 根据风险系数设置颜色
+                const riskScore = calculateAreaRiskScore(area.id);
+                const colors = getColorByRiskScore(riskScore, maxScore);
+                box.style.background = colors.background;
+                box.style.borderColor = colors.border;
+
+                const label = document.createElement('div');
+                label.className = 'area-label';
+                label.textContent = area.name;
+                box.appendChild(label);
+
+                box.onclick = function(e) {
+                    e.stopPropagation();
+                    if (currentMode === 'select') {
+                        selectedItem = { type: 'area', data: area };
+                        renderAreas();
+                        renderAreaList();
+                    } else if (currentMode === 'draw') {
+                        // 框选模式下点击已有区域，进入编辑模式
+                        editAreaInDrawMode(area);
+                    }
+                };
+
+                // 双击事件：在选择模式下上传四色图
+                box.ondblclick = function(e) {
+                    e.stopPropagation();
+                    if (currentMode === 'select') {
+                        openDetailImageModal(area.id);
+                    }
+                };
+
+                map.appendChild(box);
+            });
+
+            renderAreaList();
+        }
+
+        // 渲染区域列表（用于弹窗）
+        function renderAreaList() {
+            const list = document.getElementById('areaListContent');
+            if (!list) return; // 如果元素不存在则退出
+
+            if (areas.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; color: #666666; text-align: center;">暂无区域</div>';
+                return;
+            }
+
+            list.innerHTML = '<table style="width: 100%; border-collapse: collapse;">' +
+                '<thead>' +
+                '<tr style="background: #f8f9fa; border-bottom: 2px solid #CCCCCC;">' +
+                '<th style="padding: 12px; text-align: left; color: #002D28;">区域名称</th>' +
+                '<th style="padding: 12px; text-align: center; color: #002D28;">风险点数</th>' +
+                '<th style="padding: 12px; text-align: center; color: #002D28;">风险系数</th>' +
+                '<th style="padding: 12px; text-align: center; color: #002D28;">操作</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                areas.map(area => {
+                    const riskCount = riskPoints.filter(r => r.areaId == area.id).length;
+                    const riskScore = calculateAreaRiskScore(area.id);
+                    return `
+                    <tr style="border-bottom: 1px solid #CCCCCC;">
+                        <td style="padding: 12px;"><strong>${area.name}</strong></td>
+                        <td style="padding: 12px; text-align: center;">${riskCount}</td>
+                        <td style="padding: 12px; text-align: center;">${riskScore}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button class="btn" style="padding: 5px 10px; font-size: 12px; background: #00726d; color: white; margin-right: 5px;"
+                                    onclick="editAreaFromModal(${area.id})">编辑</button>
+                            <button class="btn" style="padding: 5px 10px; font-size: 12px; background: #0d6efd; color: white; margin-right: 5px;"
+                                    onclick="viewAreaRisks(${area.id})">查看风险点</button>
+                            <button class="btn" style="padding: 5px 10px; font-size: 12px; background: #dc3545; color: white;"
+                                    onclick="deleteAreaFromModal(${area.id})">删除</button>
+                        </td>
+                    </tr>
+                `}).join('') +
+                '</tbody>' +
+                '</table>';
+        }
+
+        // 渲染风险点列表（用于弹窗）
+        function renderRiskList() {
+            const list = document.getElementById('riskListContent');
+            if (!list) return; // 如果元素不存在则退出
+
+            // 获取筛选条件
+            const searchText = document.getElementById('riskSearchInput')?.value.toLowerCase() || '';
+            const levelFilter = document.getElementById('riskLevelFilter')?.value || '';
+            const areaFilter = document.getElementById('riskAreaFilter')?.value || '';
+
+            // 应用筛选
+            let filteredRisks = riskPoints.filter(risk => {
+                // 名称搜索
+                if (searchText && !risk.name.toLowerCase().includes(searchText)) {
+                    return false;
+                }
+                // 等级筛选
+                if (levelFilter && risk.level !== levelFilter) {
+                    return false;
+                }
+                // 区域筛选
+                if (areaFilter && risk.areaId != areaFilter) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (filteredRisks.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; color: #666666; text-align: center;">未找到符合条件的风险点</div>';
+                return;
+            }
+
+            const riskLevelNames = {
+                red: '🔴 重大',
+                orange: '🟠 较大',
+                yellow: '🟡 一般',
+                blue: '🔵 低'
+            };
+
+            list.innerHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">' +
+                '<thead>' +
+                '<tr style="background: #f8f9fa; border-bottom: 2px solid #CCCCCC;">' +
+                '<th style="padding: 10px; text-align: left; color: #002D28;">名称</th>' +
+                '<th style="padding: 10px; text-align: center; color: #002D28;">等级</th>' +
+                '<th style="padding: 10px; text-align: left; color: #002D28;">区域</th>' +
+                '<th style="padding: 10px; text-align: left; color: #002D28;">类型</th>' +
+                '<th style="padding: 10px; text-align: center; color: #002D28;">操作</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                filteredRisks.map(risk => {
+                    const areaName = areas.find(a => a.id == risk.areaId)?.name || '未分配';
+                    return `
+                    <tr style="border-bottom: 1px solid #CCCCCC;">
+                        <td style="padding: 10px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${risk.name}">
+                            <strong>${risk.name}</strong>
+                        </td>
+                        <td style="padding: 10px; text-align: center;">${riskLevelNames[risk.level]}</td>
+                        <td style="padding: 10px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${areaName}">
+                            ${areaName}
+                        </td>
+                        <td style="padding: 10px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${risk.riskType || '-'}">
+                            ${risk.riskType || '-'}
+                        </td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px; background: #00726d; color: white; margin-right: 3px;"
+                                    onclick="editRiskFromModal(${risk.id})">编辑</button>
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px; background: #dc3545; color: white;"
+                                    onclick="deleteRiskFromModal(${risk.id})">删除</button>
+                        </td>
+                    </tr>
+                `}).join('') +
+                '</tbody>' +
+                '</table>';
+        }
+
+        // 显示区域列表弹窗
+        function showAreaListModal() {
+            renderAreaList();
+            document.getElementById('areaListModal').classList.add('active');
+        }
+
+        // 关闭区域列表弹窗
+        function closeAreaListModal() {
+            document.getElementById('areaListModal').classList.remove('active');
+        }
+
+        // 显示风险点列表弹窗
+        function showRiskListModal() {
+            // 隐藏返回按钮（正常打开时）
+            document.getElementById('backToAreaListBtn').style.display = 'none';
+
+            // 更新区域筛选器选项
+            const areaFilterSelect = document.getElementById('riskAreaFilter');
+            if (areaFilterSelect) {
+                areaFilterSelect.innerHTML = '<option value="">全部区域</option>' +
+                    areas.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            }
+
+            renderRiskList();
+            document.getElementById('riskListModal').classList.add('active');
+        }
+
+        // 关闭风险点列表弹窗
+        function closeRiskListModal() {
+            document.getElementById('riskListModal').classList.remove('active');
+        }
+
+        // 筛选风险点列表
+        function filterRiskList() {
+            renderRiskList();
+        }
+
+        // 重置风险点筛选器
+        function resetRiskFilters() {
+            document.getElementById('riskSearchInput').value = '';
+            document.getElementById('riskLevelFilter').value = '';
+            document.getElementById('riskAreaFilter').value = '';
+            renderRiskList();
+        }
+
+        // 从区域列表查看该区域的风险点
+        function viewAreaRisks(areaId) {
+            // 关闭区域列表弹窗
+            closeAreaListModal();
+
+            // 更新区域筛选器选项
+            const areaFilterSelect = document.getElementById('riskAreaFilter');
+            if (areaFilterSelect) {
+                areaFilterSelect.innerHTML = '<option value="">全部区域</option>' +
+                    areas.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            }
+
+            // 重置其他筛选器
+            document.getElementById('riskSearchInput').value = '';
+            document.getElementById('riskLevelFilter').value = '';
+
+            // 设置区域筛选器为指定区域
+            document.getElementById('riskAreaFilter').value = areaId;
+
+            // 显示返回按钮
+            document.getElementById('backToAreaListBtn').style.display = 'block';
+
+            // 渲染风险点列表
+            renderRiskList();
+
+            // 打开风险点列表弹窗
+            document.getElementById('riskListModal').classList.add('active');
+        }
+
+        // 从风险点列表返回区域列表
+        function backToAreaList() {
+            // 隐藏返回按钮
+            document.getElementById('backToAreaListBtn').style.display = 'none';
+
+            // 关闭风险点列表弹窗
+            closeRiskListModal();
+
+            // 打开区域列表弹窗
+            showAreaListModal();
+        }
+
+        // 从弹窗中选中区域
+        function selectAreaFromModal(id) {
+            const area = areas.find(a => a.id === id);
+            if (area) {
+                selectedItem = { type: 'area', data: area };
+                setMode('select');
+                renderAreas();
+                renderRisks();
+                closeAreaListModal();
+            }
+        }
+
+        // 从弹窗中编辑区域
+        function editAreaFromModal(id) {
+            const area = areas.find(a => a.id === id);
+            if (!area) return;
+
+            // 关闭弹窗
+            closeAreaListModal();
+
+            // 调用统一的编辑函数
+            editAreaInDrawMode(area);
+        }
+
+        // 在框选模式下编辑区域（统一的编辑入口）
+        function editAreaInDrawMode(area) {
+            // 选中该区域
+            selectedItem = { type: 'area', data: area };
+
+            // 切换到框选模式
+            setMode('draw');
+
+            // 显示区域信息面板
+            document.getElementById('areaPanel').style.display = 'block';
+            document.getElementById('areaName').value = area.name;
+
+            renderAreas();
+        }
+
+        // 从弹窗中删除区域
+        function deleteAreaFromModal(id) {
+            if (!confirm('确定要删除该区域吗？')) return;
+            areas = areas.filter(a => a.id !== id);
+            selectedItem = null;
+            renderAreas();
+            renderAreaList();
+            updateAreaSelect();
+            updateCounts();
+            autoSaveToLocalStorage(); // 自动保存
+        }
+
+        // 从弹窗中编辑风险点
+        function editRiskFromModal(id) {
+            closeRiskListModal();
+            editRisk(id);
+        }
+
+        // 从弹窗中删除风险点
+        function deleteRiskFromModal(id) {
+            if (!confirm('确定要删除该风险点吗？')) return;
+            riskPoints = riskPoints.filter(r => r.id !== id);
+            selectedItem = null;
+            renderRisks();
+            renderRiskList();
+            renderAreas(); // 更新区域颜色
+            renderAreaList(); // 更新区域列表中的风险点数量
+            updateCounts();
+            autoSaveToLocalStorage(); // 自动保存
+        }
+
+        // 点击弹窗外部关闭
+        document.addEventListener('DOMContentLoaded', function() {
+            const areaModal = document.getElementById('areaListModal');
+            if (areaModal) {
+                areaModal.onclick = function(e) {
+                    if (e.target === areaModal) closeAreaListModal();
+                };
+            }
+
+            const riskModal = document.getElementById('riskListModal');
+            if (riskModal) {
+                riskModal.onclick = function(e) {
+                    if (e.target === riskModal) closeRiskListModal();
+                };
+            }
+        });
+
+        // 渲染风险点
+        function renderRisks() {
+            const map = document.getElementById('workshopMap');
+
+            // 清除现有风险点
+            map.querySelectorAll('.risk-point').forEach(el => el.remove());
+
+            // 渲染所有风险点
+            riskPoints.forEach(risk => {
+                const point = document.createElement('div');
+                point.className = 'risk-point';
+                point.style.left = risk.x + '%';
+                point.style.top = risk.y + '%';
+                point.style.background = riskColors[risk.level];
+                point.textContent = '●';
+
+                // 如果选中的是区域，且该风险点属于该区域，则高亮显示
+                if (selectedItem && selectedItem.type === 'area' && selectedItem.data.id == risk.areaId) {
+                    point.style.transform = 'scale(1.3)';
+                    point.style.boxShadow = '0 0 0 3px rgba(255, 193, 7, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)';
+                }
+
+                // 如果是当前选中或正在编辑的风险点
+                if (selectedItem && selectedItem.type === 'risk' && selectedItem.data.id === risk.id) {
+                    point.style.transform = 'scale(1.3)';
+                    point.style.boxShadow = '0 0 0 3px rgba(255, 193, 7, 0.8), 0 2px 8px rgba(0, 0, 0, 0.3)';
+                }
+
+                point.onclick = function(e) {
+                    e.stopPropagation();
+                    if (currentMode === 'select') {
+                        selectedItem = { type: 'risk', data: risk };
+                        renderRisks();
+                        renderRiskList();
+                    }
+                };
+
+                // 双击编辑
+                point.ondblclick = function(e) {
+                    e.stopPropagation();
+                    if (currentMode === 'select') {
+                        editRisk(risk.id);
+                    }
+                };
+
+                map.appendChild(point);
+            });
+
+            renderRiskList();
+        }
+
+
+        // 编辑风险点
+        function editRisk(id) {
+            const risk = riskPoints.find(r => r.id === id);
+            if (risk) {
+                // 切换到添加风险点模式
+                setMode('addRisk');
+
+                // 填充表单
+                document.getElementById('editingRiskId').value = risk.id;
+                document.getElementById('riskName').value = risk.name;
+                document.getElementById('riskCode').value = risk.riskCode || '';
+                document.getElementById('riskLevel').value = risk.level;
+                document.getElementById('riskDescription').value = risk.riskDescription || '';
+                document.getElementById('riskType').value = risk.riskType || '';
+                document.getElementById('controlMeasures').value = risk.controlMeasures || '';
+                document.getElementById('responsibleDept').value = risk.responsibleDept || '';
+                document.getElementById('riskResponsible').value = risk.responsible || '';
+
+                // 显示照片
+                if (risk.photo) {
+                    document.getElementById('riskPhotoImg').src = risk.photo;
+                    document.getElementById('riskPhotoPreview').style.display = 'block';
+                } else {
+                    clearRiskPhoto();
+                }
+
+                // 显示当前所属区域
+                if (risk.areaId) {
+                    const area = areas.find(a => a.id == risk.areaId);
+                    if (area) {
+                        document.getElementById('riskArea').textContent = `📍 ${area.name}`;
+                    } else {
+                        document.getElementById('riskArea').textContent = '（未在任何区域内）';
+                    }
+                } else {
+                    document.getElementById('riskArea').textContent = '（未在任何区域内）';
+                }
+
+                document.getElementById('riskX').value = risk.x.toFixed(1);
+                document.getElementById('riskY').value = risk.y.toFixed(1);
+                document.getElementById('riskPanelHint').textContent = '正在编辑：' + risk.name + '（可点击地图重新定位）';
+
+                // 设置tempRiskPoint为当前坐标
+                tempRiskPoint = {
+                    x: risk.x,
+                    y: risk.y
+                };
+
+                // 在地图上添加临时标记
+                const oldMarker = document.getElementById('tempMarker');
+                if (oldMarker) oldMarker.remove();
+
+                const marker = document.createElement('div');
+                marker.id = 'tempMarker';
+                marker.className = 'temp-marker';
+                marker.textContent = '📍';
+                marker.style.left = risk.x + '%';
+                marker.style.top = risk.y + '%';
+                document.getElementById('workshopMap').appendChild(marker);
+
+                // 标记为选中
+                selectedItem = { type: 'risk', data: risk };
+                renderRisks();
+            }
+        }
+
+        // 删除选中项
+        function deleteSelected() {
+            if (!selectedItem) {
+                alert('请先选择要删除的项目');
+                return;
+            }
+
+            if (!confirm('确定要删除吗？')) return;
+
+            if (selectedItem.type === 'area') {
+                deleteArea(selectedItem.data.id);
+            } else {
+                deleteRisk(selectedItem.data.id);
+            }
+        }
+
+        // 删除区域
+        function deleteArea(id) {
+            areas = areas.filter(a => a.id !== id);
+            selectedItem = null;
+            renderAreas();
+            renderAreaList();
+            updateAreaSelect();
+            updateCounts();
+            autoSaveToLocalStorage(); // 自动保存
+        }
+
+        // 删除风险点
+        function deleteRisk(id) {
+            riskPoints = riskPoints.filter(r => r.id !== id);
+            selectedItem = null;
+            renderRisks();
+            renderRiskList();
+            renderAreas(); // 更新区域颜色
+            renderAreaList(); // 更新区域列表中的风险点数量
+            updateCounts();
+            autoSaveToLocalStorage(); // 自动保存
+        }
+
+        // 更新区域下拉框（已废弃，保留用于兼容）
+        function updateAreaSelect() {
+            // 区域选择已改为自动识别，不再需要手动选择
+            // 保留此函数以兼容其他调用
+        }
+
+        // 更新计数
+        function updateCounts() {
+            document.getElementById('areaCount').textContent = areas.length;
+            document.getElementById('riskCount').textContent = riskPoints.length;
+        }
+
+        // 处理Excel上传
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    let successCount = 0;
+                    let errorCount = 0;
+                    let errorMessages = [];
+
+                    jsonData.forEach((row, index) => {
+                        try {
+                            const rowNum = index + 2; // Excel行号（从2开始，因为第1行是表头）
+
+                            // 兼容旧字段名和新字段名
+                            const name = row['风险点名称'] || row['区域名称'];
+                            const riskType = row['易发生的事故类型'] || row['风险类型'];
+
+                            // 检查必填字段
+                            if (!name) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：缺少"风险点名称"`);
+                                return;
+                            }
+                            if (!row['风险等级']) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：缺少"风险等级"`);
+                                return;
+                            }
+                            if (!row['X坐标(%)'] && row['X坐标(%)'] !== 0) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：缺少"X坐标(%)"`);
+                                return;
+                            }
+                            if (!row['Y坐标(%)'] && row['Y坐标(%)'] !== 0) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：缺少"Y坐标(%)"`);
+                                return;
+                            }
+
+                            // 验证风险等级
+                            let level = '';
+                            const levelText = row['风险等级'].toString().toLowerCase();
+                            // 支持两种格式：重大风险/较大风险/一般风险/低风险 或 红色/橙色/黄色/蓝色
+                            if (levelText.includes('重大') || levelText.includes('红') || levelText === 'red') level = 'red';
+                            else if (levelText.includes('较大') || levelText.includes('橙') || levelText === 'orange') level = 'orange';
+                            else if (levelText.includes('一般') || levelText.includes('黄') || levelText === 'yellow') level = 'yellow';
+                            else if (levelText.includes('低') || levelText.includes('蓝') || levelText === 'blue') level = 'blue';
+                            else {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：风险等级"${row['风险等级']}"不正确，应为：重大风险/较大风险/一般风险/低风险`);
+                                return;
+                            }
+
+                            // 验证坐标
+                            const x = parseFloat(row['X坐标(%)']);
+                            const y = parseFloat(row['Y坐标(%)']);
+
+                            if (isNaN(x) || x < 0 || x > 100) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：X坐标"${row['X坐标(%)']}"不正确，应为0-100的数字`);
+                                return;
+                            }
+                            if (isNaN(y) || y < 0 || y > 100) {
+                                errorCount++;
+                                errorMessages.push(`第${rowNum}行：Y坐标"${row['Y坐标(%)']}"不正确，应为0-100的数字`);
+                                return;
+                            }
+
+                            // 查找所属区域：优先使用"所属区域"字段，其次根据坐标自动判断
+                            let areaId = '';
+                            if (row['所属区域']) {
+                                const area = areas.find(a => a.name === row['所属区域']);
+                                if (area) {
+                                    areaId = area.id;
+                                }
+                            }
+
+                            // 如果没有找到区域，则根据坐标自动判断
+                            if (!areaId) {
+                                areaId = findAreaByPoint(x, y);
+                            }
+
+                            const risk = {
+                                id: Date.now() + successCount,
+                                areaId: areaId,
+                                name: name,
+                                riskCode: row['风险代码'] || '',
+                                level: level,
+                                riskDescription: row['风险描述'] || '',
+                                x: x,
+                                y: y,
+                                riskType: riskType || '',
+                                controlMeasures: row['主要管控措施'] || '',
+                                responsibleDept: row['责任部门'] || '',
+                                responsible: row['责任人'] || ''
+                            };
+
+                            riskPoints.push(risk);
+                            successCount++;
+                        } catch (err) {
+                            errorCount++;
+                            errorMessages.push(`第${index + 2}行：数据处理异常 - ${err.message}`);
+                        }
+                    });
+
+                    renderRisks();
+                    renderAreas(); // 更新区域颜色
+                    renderAreaList(); // 更新区域列表
+                    updateCounts();
+                    autoSaveToLocalStorage(); // 自动保存
+
+                    // 构建提示消息
+                    let message = `导入完成！\n成功：${successCount} 个\n失败：${errorCount} 个`;
+                    if (errorCount > 0 && errorMessages.length > 0) {
+                        message += '\n\n失败原因：\n';
+                        // 最多显示前10条错误
+                        const displayErrors = errorMessages.slice(0, 10);
+                        message += displayErrors.join('\n');
+                        if (errorMessages.length > 10) {
+                            message += `\n... 还有 ${errorMessages.length - 10} 条错误`;
+                        }
+                    }
+
+                    alert(message);
+                    event.target.value = '';
+                } catch (err) {
+                    alert('Excel文件解析失败：' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 下载Excel模板
+        function downloadTemplate() {
+            const templateData = [
+                {
+                    '序号': 1,
+                    '所属区域': '生产区A',
+                    '风险点名称': '设备A1',
+                    '风险代码': 'FX-001',
+                    '风险等级': '较大风险',
+                    '风险描述': '设备运转时存在机械伤害风险',
+                    'X坐标(%)': 20,
+                    'Y坐标(%)': 30,
+                    '易发生的事故类型': '机械伤害',
+                    '主要管控措施': '1.定期检查设备安全防护装置\n2.操作人员必须经过培训\n3.穿戴好劳保用品',
+                    '责任部门': '生产部',
+                    '责任人': '张三'
+                }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            ws['!cols'] = [
+                { wch: 8 },  // 序号
+                { wch: 15 }, // 所属区域
+                { wch: 18 }, // 风险点名称
+                { wch: 12 }, // 风险代码
+                { wch: 12 }, // 风险等级
+                { wch: 30 }, // 风险描述
+                { wch: 12 }, // X坐标
+                { wch: 12 }, // Y坐标
+                { wch: 18 }, // 易发生的事故类型
+                { wch: 40 }, // 主要管控措施
+                { wch: 12 }, // 责任部门
+                { wch: 10 }  // 责任人
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '风险点数据');
+
+            const instructions = [
+                { '字段名称': '序号', '说明': '选填，导入时会自动生成', '示例': '1' },
+                { '字段名称': '所属区域', '说明': '选填，系统会根据坐标自动判断', '示例': '生产区A' },
+                { '字段名称': '风险点名称', '说明': '必填，风险点的名称', '示例': '设备A1' },
+                { '字段名称': '风险代码', '说明': '选填，风险点编码', '示例': 'FX-001' },
+                { '字段名称': '风险等级', '说明': '必填，重大风险/较大风险/一般风险/低风险', '示例': '较大风险' },
+                { '字段名称': '风险描述', '说明': '选填，描述风险内容', '示例': '设备运转时存在机械伤害风险' },
+                { '字段名称': 'X坐标(%)', '说明': '必填，0-100的数字', '示例': '20' },
+                { '字段名称': 'Y坐标(%)', '说明': '必填，0-100的数字', '示例': '30' },
+                { '字段名称': '易发生的事故类型', '说明': '选填，可能发生的事故类型', '示例': '机械伤害' },
+                { '字段名称': '主要管控措施', '说明': '选填，风险管控措施', '示例': '定期检查设备安全防护装置' },
+                { '字段名称': '责任部门', '说明': '选填，负责部门', '示例': '生产部' },
+                { '字段名称': '责任人', '说明': '选填，负责人姓名', '示例': '张三' }
+            ];
+
+            const wsInstructions = XLSX.utils.json_to_sheet(instructions);
+            wsInstructions['!cols'] = [
+                { wch: 20 },
+                { wch: 35 },
+                { wch: 35 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsInstructions, '填写说明');
+
+            XLSX.writeFile(wb, '车间风险点导入模板.xlsx');
+        }
+
+        // 自动保存数据到 localStorage（供展示页面使用）
+        function autoSaveToLocalStorage() {
+            const data = {
+                backgroundImage: backgroundImage,
+                areas: areas,
+                riskPoints: riskPoints
+            };
+            localStorage.setItem('workshopRiskData', JSON.stringify(data));
+            console.log('数据已自动保存到 localStorage');
+        }
+
+        // 导出所有数据
+        function exportAllData() {
+            const data = {
+                backgroundImage: backgroundImage,
+                areas: areas,
+                riskPoints: riskPoints,
+                exportTime: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `车间风险数据_${new Date().toLocaleDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // 同时保存到localStorage
+            localStorage.setItem('workshopRiskData', JSON.stringify(data));
+            alert('数据已导出并自动保存！');
+        }
+
+        // 打开展示页面
+        function openDisplayPage() {
+            // 保存数据到localStorage
+            const data = {
+                backgroundImage: backgroundImage,
+                areas: areas,
+                riskPoints: riskPoints
+            };
+            localStorage.setItem('workshopRiskData', JSON.stringify(data));
+
+            // 打开新窗口
+            window.open('workshop-risk-display.html', '_blank');
+        }
+
+        // 显示帮助说明
+        function showHelp() {
+            document.getElementById('helpModal').classList.add('active');
+        }
+
+        // 关闭帮助说明
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('active');
+        }
+
+        // 打开四色图上传模态框
+        function openDetailImageModal(areaId) {
+            currentEditingAreaId = areaId;
+            const area = areas.find(a => a.id === areaId);
+            if (!area) return;
+
+            document.getElementById('detailAreaName').textContent = area.name;
+
+            // 初始化detailImages数组（向后兼容旧数据）
+            if (!area.detailImages) {
+                area.detailImages = [];
+                // 如果有旧的detailImage，迁移到数组
+                if (area.detailImage) {
+                    area.detailImages.push(area.detailImage);
+                    delete area.detailImage;
+                }
+            }
+
+            // 渲染已上传的图片
+            renderUploadedImages();
+
+            document.getElementById('detailImageModal').classList.add('active');
+        }
+
+        // 渲染已上传的图片列表
+        function renderUploadedImages() {
+            const area = areas.find(a => a.id === currentEditingAreaId);
+            if (!area) return;
+
+            const listContainer = document.getElementById('uploadedImagesList');
+            const placeholder = document.getElementById('detailImagePlaceholder');
+
+            if (!area.detailImages || area.detailImages.length === 0) {
+                listContainer.innerHTML = '';
+                listContainer.style.display = 'none';
+                placeholder.style.display = 'block';
+            } else {
+                placeholder.style.display = 'none';
+                listContainer.style.display = 'grid';
+                listContainer.innerHTML = area.detailImages.map((img, index) => `
+                    <div style="position: relative; border: 2px solid #CCCCCC; border-radius: 8px; overflow: hidden; background: white;">
+                        <img src="${img}" style="width: 100%; height: 150px; object-fit: cover; display: block;">
+                        <div style="position: absolute; top: 5px; right: 5px;">
+                            <button onclick="removeDetailImageByIndex(${index})"
+                                    style="background: rgba(220, 53, 69, 0.9); color: white; border: none; border-radius: 4px;
+                                           padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: bold;">
+                                🗑️
+                            </button>
+                        </div>
+                        <div style="padding: 5px; text-align: center; font-size: 12px; color: #666;">
+                            图片 ${index + 1}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 关闭四色图上传模态框
+        function closeDetailImageModal() {
+            document.getElementById('detailImageModal').classList.remove('active');
+            currentEditingAreaId = null;
+            document.getElementById('detailImageInput').value = '';
+        }
+
+        // 处理四色图上传（支持多张）
+        function handleDetailImageUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            if (!currentEditingAreaId) {
+                alert('未找到区域信息');
+                return;
+            }
+
+            const area = areas.find(a => a.id === currentEditingAreaId);
+            if (!area) return;
+
+            // 初始化数组
+            if (!area.detailImages) {
+                area.detailImages = [];
+            }
+
+            let processedCount = 0;
+            const totalFiles = files.length;
+
+            // 处理所有选中的文件
+            Array.from(files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    area.detailImages.push(e.target.result);
+                    processedCount++;
+
+                    // 所有文件都处理完成后刷新显示
+                    if (processedCount === totalFiles) {
+                        renderUploadedImages();
+                        autoSaveToLocalStorage(); // 自动保存
+                        alert(`成功上传 ${totalFiles} 张图片！`);
+                        event.target.value = ''; // 清空input
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 删除指定索引的四色图
+        function removeDetailImageByIndex(index) {
+            if (!currentEditingAreaId) return;
+
+            if (!confirm('确定要删除这张图片吗？')) return;
+
+            const area = areas.find(a => a.id === currentEditingAreaId);
+            if (area && area.detailImages) {
+                area.detailImages.splice(index, 1);
+                renderUploadedImages();
+                autoSaveToLocalStorage(); // 自动保存
+            }
+        }
+
+        // 处理风险点照片上传
+        function handleRiskPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('riskPhotoImg');
+                img.src = e.target.result;
+                document.getElementById('riskPhotoPreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 清除风险点照片
+        function clearRiskPhoto() {
+            const img = document.getElementById('riskPhotoImg');
+            img.src = '';
+            document.getElementById('riskPhotoPreview').style.display = 'none';
+            document.getElementById('riskPhotoInput').value = '';
+        }
+
+        // 点击模态框外部关闭
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('helpModal');
+            if (modal) {
+                modal.onclick = function(e) {
+                    if (e.target === modal) closeHelp();
+                };
+            }
+
+            const detailModal = document.getElementById('detailImageModal');
+            if (detailModal) {
+                detailModal.onclick = function(e) {
+                    if (e.target === detailModal) closeDetailImageModal();
+                };
+            }
+        });
+
+        // 初始化
+        window.onload = function() {
+            setMode('select');
+            updateCounts();
+
+            // 尝试加载保存的数据
+            const savedData = localStorage.getItem('workshopRiskData');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    if (data.backgroundImage) {
+                        backgroundImage = data.backgroundImage;
+                        const img = document.getElementById('workshopImage');
+                        img.src = backgroundImage;
+                        img.style.display = 'block';
+                        document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    }
+                    if (data.areas) {
+                        areas = data.areas;
+                        renderAreas();
+                        updateAreaSelect();
+                    }
+                    if (data.riskPoints) {
+                        riskPoints = data.riskPoints;
+                        renderRisks();
+                    }
+                    updateCounts();
+                } catch (e) {
+                    console.error('加载数据失败', e);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
